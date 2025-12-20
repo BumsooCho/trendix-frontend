@@ -7,13 +7,10 @@ import { TestimonialType } from '@/types/testimonial'
 import { FooterLinkType } from '@/types/footerlinks'
 
 export const HeaderData: HeaderItem[] = [
-  { label: 'Home', href: '/#Home' },
-  { label: 'Courses', href: '/#Courses' },
-  { label: 'Mentors', href: '/#mentors-section' },
-  { label: 'Testimonial', href: '/#testimonial-section' },
-  { label: 'Join', href: '/#join-section' },
-  { label: 'Contact Us', href: '/#contact' },
-  { label: 'Docs', href: '/documentation' },
+  { label: '홈', href: '/' },
+  { label: '급등 영상', href: '/#trending-section' },
+  { label: '내 채널 분석', href: '/channel' },
+  { label: '영상 비교', href: '/compare' },
 ]
 
 export const CourseData: CourseType[] = [
@@ -239,14 +236,12 @@ export const TestimonialData: TestimonialType[] = [
 
 export const FooterLinkData: FooterLinkType[] = [
   {
-    section: 'Company',
+    section: '서비스',
     links: [
-      { label: 'Home', href: '/#Home' },
-      { label: 'Courses', href: '/#Courses' },
-      { label: 'Mentors', href: '/#mentors-section' },
-      { label: 'Testimonial', href: '/#testimonial-section' },
-      { label: 'Join', href: '/#join-section' },
-      { label: 'Contact Us', href: '/#contact' },
+      { label: '홈', href: '/' },
+      { label: '급등 영상', href: '/#trending-section' },
+      { label: '내 채널 분석', href: '/channel' },
+      { label: '영상 비교', href: '/compare' },
     ],
   },
   {

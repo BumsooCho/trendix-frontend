@@ -33,67 +33,24 @@ const Banner = () => {
         <div className='container'>
           <div className='flex flex-col gap-4 text-center'>
             <h1 className='leading-tight font-bold tracking-tight max-w-4xl mx-auto'>
-              크리에이터를 위한<br className='hidden sm:block' /> 데이터 기반 트렌드 분석
+              지금 뜨는 유튜브 영상,<br className='hidden sm:block' /> 왜 뜨는지 알려드립니다
             </h1>
             <p className='text-lg leading-8 text-gray-600 max-w-2xl mx-auto'>
-              Trendix에서 최신 트렌드를 파악하고 채널을 성장시키세요.<br className='hidden sm:block' />
-              데이터가 알려주는 확실한 성공 전략을 만나실 수 있습니다.
+              실시간 급등 영상 탐지와 데이터 기반 분석으로<br className='hidden sm:block' />
+              크리에이터의 콘텐츠 기획을 돕습니다.
             </p>
-            <div className='backdrop-blur-md bg-white/30 border border-white/30 rounded-lg shadow-lg p-6 w-fit mx-auto mt-4'>
-              <div className='flex items-center justify-center gap-8'>
-                <div className='hidden sm:block -space-x-2 overflow-hidden'>
-                  <Image
-                    className='inline-block h-12 w-12 rounded-full ring-2 ring-white'
-                    src='https://images.unsplash.com/photo-1491528323818-fdd1faba62cc?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-                    alt='img1'
-                    width={48}
-                    height={48}
-                  />
-
-                  <Image
-                    className='inline-block h-12 w-12 rounded-full ring-2 ring-white'
-                    src='https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-                    alt='img2'
-                    width={48}
-                    height={48}
-                  />
-                  <Image
-                    className='inline-block h-12 w-12 rounded-full ring-2 ring-white'
-                    src='https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2.25&w=256&h=256&q=80'
-                    alt='img3'
-                    width={48}
-                    height={48}
-                  />
-                  <Image
-                    className='inline-block h-12 w-12 rounded-full ring-2 ring-white'
-                    src='https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-                    alt='img4'
-                    width={48}
-                    height={48}
-                  />
-                  <Image
-                    className='inline-block h-12 w-12 rounded-full ring-2 ring-white'
-                    src='https://images.unsplash.com/photo-1550525811-e5869dd03032?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
-                    alt='img5'
-                    width={48}
-                    height={48}
-                  />
-                </div>
-                <div>
-                  <div className='flex justify-center sm:justify-start items-center'>
-                    <h3 className='text-2xl font-semibold mr-2'>4.8</h3>
-                    <Image
-                      src={'/images/banner/Stars.svg'}
-                      alt='stars-icon'
-                      width={100}
-                      height={100}
-                      className='w-auto h-6'
-                    />
-                  </div>
-                  <div>
-                    <h3 className='text-sm text-gray-700'>수많은 크리에이터들의 선택</h3>
-                  </div>
-                </div>
+            <div className='flex flex-wrap justify-center gap-4 mt-4'>
+              <div className='flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm'>
+                <span className='text-2xl'>📈</span>
+                <span className='text-sm font-medium text-gray-700'>실시간 급등 탐지</span>
+              </div>
+              <div className='flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm'>
+                <span className='text-2xl'>🎯</span>
+                <span className='text-sm font-medium text-gray-700'>데이터 기반 근거</span>
+              </div>
+              <div className='flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-sm'>
+                <span className='text-2xl'>🇰🇷</span>
+                <span className='text-sm font-medium text-gray-700'>한국 트렌드 특화</span>
               </div>
             </div>
           </div>
@@ -106,7 +63,7 @@ const Banner = () => {
                   <button className='bg-primary w-full hover:bg-transparent hover:text-primary duration-300 border border-primary text-white font-bold py-4 px-3 rounded-sm hover:cursor-pointer'
                     onClick={() => setIsSignInOpen(true)}
                   >
-                    무료로 시작하기
+                    트렌드 확인하기
                   </button>
                 </div>
               )}

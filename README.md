@@ -1,2 +1,2 @@
 # trendix-frontend
-It's for Trendix Frontend!
+It's for Trendix Frontend

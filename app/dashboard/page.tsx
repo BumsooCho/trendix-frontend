@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 const DashboardPage = () => {
     return (
         <>
-            <Breadcrumb pageName="대시보드" pageDescription={metadata.description} />
+            <Breadcrumb
+                pageName="대시보드"
+                pageDescription={typeof metadata.description === 'string' ? metadata.description : undefined}
+            />
             <div className="container mx-auto p-4">
                 <DashboardClient />
             </div>

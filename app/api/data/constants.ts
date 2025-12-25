@@ -8,6 +8,7 @@ import { FooterLinkType } from '@/types/footerlinks'
 
 export const HeaderData: HeaderItem[] = [
   { label: '홈', href: '/' },
+  { label: '대시보드', href: '/dashboard' },
   { label: '급등 영상', href: '/#trending-section' },
   { label: '내 채널 분석', href: '/channel' },
   { label: '영상 비교', href: '/compare' },

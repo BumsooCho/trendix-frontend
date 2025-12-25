@@ -23,6 +23,7 @@ interface ChannelData {
     subscriberCount: number
     totalVideos: number
     overallPerformance: number // 트렌드 대비 성과 (%)
+    recentVideos: ChannelVideo[]
 }
 
 // 더미 데이터 (위젯에 맞게 간소화)

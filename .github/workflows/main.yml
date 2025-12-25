@@ -45,12 +45,10 @@ jobs:
     steps:
       - name: GHCR Login
         run: echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-    
-      - name: Pull latest image
-        run: docker pull ghcr.io/${{ secrets.REPO_USER }}/trendix-frontend:latest
 
       - name: Stop old container
         run: |
+          docker-compose down -v
           docker image prune -f
           docker logout
 

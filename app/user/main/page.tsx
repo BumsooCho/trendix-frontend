@@ -14,8 +14,7 @@ export default async function UserMainPage() {
         });
         const data = await res.json();
 
-
-        const hotTrend = await Promise.all(data.items.filter((category: HotTrendType) => category.category !== "uncategorized" && category.category !== "Food & Drink").map((category: HotTrendType) => categoryList(category.category, 4)));
+        const hotTrend = await Promise.all(data.items.filter((category: HotTrendType) => category.category !== "uncategorized").map((category: HotTrendType) => categoryList(category.category, 4)));
 
         const flattenedList: Video[] = [];
         const maxLength = Math.max(...hotTrend.map(trend => trend.items?.length || 0));

@@ -4,6 +4,7 @@ import { ChatMessage as ChatMessageType } from '@/types/chat';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ChatVideoList from './ChatVideoList';
 
 interface ChatMessageProps {
     message: ChatMessageType;
@@ -15,7 +16,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
 
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-            <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${isUser
+            <div className={` ${message.videos?.length ? 'w-full max-w-none' : 'max-w-[80%]'} rounded-2xl px-4 py-3 ${isUser
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
                 }`}>
@@ -30,6 +31,9 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                     </div>
                 ) : (
                     <>
+                        {message.videos && message.videos.length > 0 && (
+                            <ChatVideoList videos={message.videos} />
+                        )}
                         {/* prose: 마크다운 요소에 기본 여백과 스타일 부여
                             prose-sm: 폰트 크기 최적화
                             prose-invert: 어두운 배경에서 글자색을 밝게 반전 (사용자 메시지용)

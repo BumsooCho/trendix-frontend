@@ -7,10 +7,6 @@ export default async function UserLayout({ children }: { children: React.ReactNo
 
     const interRestList = await interestList();
 
-    interRestList.forEach((interest) => {
-        console.log(interest);
-    })
-
     return (
         <ClientAuthGuard>
             <InterestProvider initialInterestList={interRestList}>

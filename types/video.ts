@@ -17,5 +17,7 @@ interface Video {
     score_trend: number,
     total_score: number,
     crawled_at: string,
-    channel_username: string
+    channel_username: string,
+    similarity?: number,
+    source?: string
 }

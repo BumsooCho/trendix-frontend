@@ -2,10 +2,10 @@ import { NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
     try {
-        const { message, conversationId } = await request.json();
+        const { messages, conversationId } = await request.json();
 
-        if (!message || typeof message !== 'string') {
-            return new Response('Invalid message', { status: 400 });
+        if (!messages || !Array.isArray(messages)) {
+            return new Response('Invalid messages format', { status: 400 });
         }
 
         const encoder = new TextEncoder();
@@ -15,16 +15,16 @@ export async function POST(request: NextRequest) {
 
                 try {
                     const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-                    const response = await fetch(`${apiUrl}/chat/stream`, {  // ⭐ 경로 수정
+                    const response = await fetch(`${apiUrl}/chat/stream`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            messages: [{ role: 'user', content: message }],  // ⭐ messages 형식으로 변경
+                            messages,
                             conversationId,
                         }),
-                        signal: request.signal,  // ⭐ 클라이언트 중지 신호 전달
+                        signal: request.signal,
                     });
 
                     if (!response.ok) {

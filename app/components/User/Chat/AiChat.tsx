@@ -45,13 +45,22 @@ export default function AiChat() {
         abortControllerRef.current = new AbortController();
 
         try {
+            // 현재 메시지까지 포함된 전체 메시지 리스트 생성
+            const newMessages = [...messages, userMessage];
+
+            // 백엔드로 보낼 메시지 리스트 (id, timestamp 등 제외하고 role, content만 전송)
+            const apiMessages = newMessages.map(({ role, content }) => ({
+                role,
+                content
+            }));
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    message: content,
+                    messages: apiMessages,
                     conversationId,
                 }),
                 signal: abortControllerRef.current.signal,  // ⭐ signal 연결
@@ -115,6 +124,18 @@ export default function AiChat() {
                                 continue;
                             }
 
+                            // 백엔드에서 videos 데이터 처리
+                            if (parsed.videos) {
+                                setMessages((prev) => {
+                                    return prev.map((msg) =>
+                                        msg.id === assistantMessageId
+                                            ? { ...msg, videos: parsed.videos }
+                                            : msg
+                                    );
+                                });
+                                continue;
+                            }
+
                             // 백엔드에서 {"content": "..."} 형식으로 보냄
                             if (parsed.content) {
                                 setMessages((prev) => {
@@ -166,7 +187,7 @@ export default function AiChat() {
                 return newMessages;
             });
         }
-    }, [conversationId]);
+    }, [conversationId, messages]);
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">

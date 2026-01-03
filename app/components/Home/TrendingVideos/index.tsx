@@ -74,7 +74,7 @@ export default function TrendingVideos() {
                 if (selectedCategory === 'all') {
                     // 급등 영상 전체 Top 10 조회
                     const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/trends/videos/surge?platform=youtube&limit=10&days=3&velocity_days=1`,
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/trends/videos/surge?platform=youtube&limit=20&days=14&velocity_days=1`,
                         {
                             method: 'GET',
                             headers: {

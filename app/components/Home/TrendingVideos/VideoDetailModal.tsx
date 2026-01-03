@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Icon } from '@iconify/react/dist/iconify.js'
 
@@ -49,48 +49,200 @@ function timeAgo(dateString: string): string {
     return `${Math.floor(seconds / 604800)}주 전`
 }
 
-// 더미 시계열 데이터
-const dummyViewHistory = [
-    { time: '8시간 전', count: 50000 },
-    { time: '7시간 전', count: 120000 },
-    { time: '6시간 전', count: 280000 },
-    { time: '5시간 전', count: 450000 },
-    { time: '4시간 전', count: 680000 },
-    { time: '3시간 전', count: 890000 },
-    { time: '2시간 전', count: 1050000 },
-    { time: '1시간 전', count: 1180000 },
-    { time: '현재', count: 1250000 },
-]
+interface ViewHistoryItem {
+    snapshot_date: string
+    view_count: number
+    like_count: number
+    comment_count: number
+}
 
-function SimpleChart({ data, label, color }: { data: { time: string; count: number }[], label: string, color: string }) {
-    const maxCount = Math.max(...data.map(d => d.count))
+function SimpleChart({ 
+    data, 
+    label, 
+    color, 
+    isLoading 
+}: { 
+    data: { time: string; count: number }[], 
+    label: string, 
+    color: string,
+    isLoading?: boolean
+}) {
+    if (isLoading) {
+        return (
+            <div className='bg-gray-50 rounded-lg p-3'>
+                <h4 className='font-medium text-gray-700 mb-3 text-sm'>{label} 추이</h4>
+                <div className='flex items-center justify-center h-40'>
+                    <Icon icon='mdi:loading' className='text-2xl text-gray-400 animate-spin' />
+                </div>
+            </div>
+        )
+    }
+
+    if (data.length === 0) {
+        return (
+            <div className='bg-gray-50 rounded-lg p-3'>
+                <h4 className='font-medium text-gray-700 mb-3 text-sm'>{label} 추이</h4>
+                <div className='flex items-center justify-center h-40 text-gray-400 text-sm'>
+                    데이터 없음
+                </div>
+            </div>
+        )
+    }
+
+    // Y축 최대값을 데이터 최댓값 + 5%로 설정 (여유 공간 확보)
+    const actualMax = Math.max(...data.map(d => d.count), 1)
+    const actualMin = Math.min(...data.map(d => d.count), 0)
+    const maxCount = actualMax + (actualMax * 0.05) // 최댓값 + 5%
+    const minCount = actualMin
 
     return (
         <div className='bg-gray-50 rounded-lg p-3'>
             <h4 className='font-medium text-gray-700 mb-3 text-sm'>{label} 추이</h4>
-            <div className='flex items-end gap-1 h-20'>
-                {data.map((item, i) => (
-                    <div key={i} className='flex-1 flex flex-col items-center'>
-                        <div
-                            className={`w-full rounded-t ${color}`}
-                            style={{ height: `${(item.count / maxCount) * 100}%`, minHeight: '2px' }}
-                            title={`${formatNumber(item.count)}`}
-                        />
-                    </div>
-                ))}
+            
+            {/* 막대 그래프 영역 */}
+            <div className='flex items-end justify-center gap-1 h-40 mb-1 px-2'>
+                {data.map((item, i) => {
+                    // 각 막대의 높이를 MAX+5% 값 기준으로 계산
+                    const heightPercent = ((item.count - minCount) / (maxCount - minCount)) * 100
+                    
+                    return (
+                        <div 
+                            key={i} 
+                            className='flex flex-col items-center group relative'
+                            style={{ width: `${Math.max(100 / data.length, 2)}%` }}
+                        >
+                            <div
+                                className={`w-full rounded-t-md transition-all duration-200 ${color} hover:brightness-110 cursor-pointer shadow-sm`}
+                                style={{ 
+                                    height: `${heightPercent}%`, 
+                                    minHeight: '4px',
+                                    minWidth: '8px'
+                                }}
+                            >
+                                {/* 툴팁 */}
+                                <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none'>
+                                    <div className='bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg'>
+                                        {item.time}<br />
+                                        <span className='font-semibold'>{formatNumber(item.count)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
-            <div className='flex justify-between mt-2 text-xs text-gray-500'>
-                <span>{formatNumber(data[0].count)}</span>
+            
+            {/* X축 날짜 라벨 */}
+            <div className='flex justify-between text-[9px] text-gray-400 mb-2 overflow-hidden'>
+                {data.map((item, i) => {
+                    // 날짜가 많으면 간격을 두고 표시
+                    const showLabel = data.length <= 10 || i % Math.ceil(data.length / 10) === 0 || i === data.length - 1
+                    
+                    return (
+                        <div 
+                            key={i} 
+                            className='flex-1 text-center'
+                            style={{ 
+                                visibility: showLabel ? 'visible' : 'hidden' 
+                            }}
+                        >
+                            {item.time}
+                        </div>
+                    )
+                })}
+            </div>
+            
+            {/* 통계 정보 */}
+            <div className='flex justify-between text-xs text-gray-500 pt-2 border-t border-gray-200'>
+                <span>MIN: {formatNumber(actualMin)}</span>
+                <span className='font-medium text-gray-700'>
+                    MAX: {formatNumber(actualMax)}
+                </span>
                 <span className='text-green-600 font-medium'>
                     +{formatNumber(data[data.length - 1].count - data[0].count)}
                 </span>
-                <span>{formatNumber(data[data.length - 1].count)}</span>
             </div>
         </div>
     )
 }
 
 export default function VideoDetailModal({ video, onClose }: VideoDetailModalProps) {
+    const [viewHistory, setViewHistory] = useState<ViewHistoryItem[]>([])
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+
+    // 비디오가 변경될 때마다 조회수 추이 데이터 가져오기
+    useEffect(() => {
+        if (!video) return
+
+        const controller = new AbortController()
+        
+        const fetchViewHistory = async () => {
+            setIsLoadingHistory(true)
+            try {
+                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+                
+                if (!apiBaseUrl) {
+                    console.error('NEXT_PUBLIC_API_BASE_URL is not defined. Please set it in .env.local')
+                    setViewHistory([])
+                    setIsLoadingHistory(false)
+                    return
+                }
+
+                const url = `${apiBaseUrl}/trends/videos/${video.id}/view_history?platform=youtube&limit=30`
+                console.log('Fetching view history from:', url)
+
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    cache: 'no-store',
+                    signal: controller.signal,
+                })
+
+                if (res.ok) {
+                    const data = await res.json()
+                    const history: ViewHistoryItem[] = data.history || []
+                    
+                    // 날짜 순서대로 정렬 (오래된 것 -> 최신)
+                    const sortedByDate = history.sort((a, b) => {
+                        const dateA = new Date(a.snapshot_date).getTime()
+                        const dateB = new Date(b.snapshot_date).getTime()
+                        return dateA - dateB
+                    })
+                    
+                    console.log('View history loaded:', sortedByDate.length, 'days')
+                    if (sortedByDate.length > 0) {
+                        console.log('First date:', sortedByDate[0].snapshot_date, 'view_count:', sortedByDate[0].view_count)
+                        console.log('Last date:', sortedByDate[sortedByDate.length - 1].snapshot_date, 'view_count:', sortedByDate[sortedByDate.length - 1].view_count)
+                    }
+                    
+                    setViewHistory(sortedByDate)
+                } else {
+                    const errorText = await res.text().catch(() => '')
+                    console.error('Failed to fetch view history:', {
+                        status: res.status,
+                        statusText: res.statusText,
+                        error: errorText,
+                        url: res.url
+                    })
+                    setViewHistory([])
+                }
+            } catch (error: any) {
+                if (error?.name !== 'AbortError') {
+                    console.error('Error fetching view history:', error)
+                }
+                setViewHistory([])
+            } finally {
+                setIsLoadingHistory(false)
+            }
+        }
+
+        fetchViewHistory()
+
+        return () => controller.abort()
+    }, [video])
+
     // ESC 키로 닫기
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -192,11 +344,29 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
 
                     {/* Charts */}
                     <div className='grid grid-cols-2 gap-4 mb-4'>
-                        <SimpleChart data={dummyViewHistory} label='조회수' color='bg-blue-500' />
+                        <SimpleChart 
+                            data={viewHistory.map(item => ({
+                                time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { 
+                                    month: 'short', 
+                                    day: 'numeric'
+                                }),
+                                count: item.view_count
+                            }))}
+                            label='조회수' 
+                            color='bg-blue-500'
+                            isLoading={isLoadingHistory}
+                        />
                         <SimpleChart
-                            data={dummyViewHistory.map(d => ({ ...d, count: Math.floor(d.count * 0.068) }))}
+                            data={viewHistory.map(item => ({
+                                time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { 
+                                    month: 'short', 
+                                    day: 'numeric'
+                                }),
+                                count: item.like_count
+                            }))}
                             label='좋아요'
                             color='bg-pink-500'
+                            isLoading={isLoadingHistory}
                         />
                     </div>
 

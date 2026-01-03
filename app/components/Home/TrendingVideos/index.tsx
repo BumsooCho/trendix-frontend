@@ -86,7 +86,7 @@ export default function TrendingVideos() {
                     )
 
                     if (!res.ok) {
-                        throw new Error('급등 영상 데이터를 불러오지 못했습니다.')
+                        throw new Error('급등 영상 데이터를 불러오지 못했습니다!')
                     }
 
                     const data = await res.json()
@@ -125,9 +125,9 @@ export default function TrendingVideos() {
                     const mappedId = CATEGORY_ID_MAP[selectedCategory] ?? selectedCategory
 
                     const res = await fetch(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/trends/categories/${encodeURIComponent(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/trends/menu?category_id=${encodeURIComponent(
                             mappedId
-                        )}/recommendations?limit=20&days=14&platform=youtube`,
+                        )}&limit=20&days=14&platform=youtube`,
                         {
                             method: 'GET',
                             headers: {

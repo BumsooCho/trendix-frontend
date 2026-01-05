@@ -29,11 +29,45 @@ export default function AiChat() {
         }
     }, [conversationId]);
 
+        // ★ 욕설 필터 API 호출 함수
+    const filterMessage = async (raw: string): Promise<string> => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+            const res = await fetch(`${apiUrl}/filter`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: raw }),
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Profanity filter failed:', res.status, errorText);
+                return raw;
+            }
+
+            const data = await res.json();
+            console.log('filterMessage data:', data);
+
+            // data.filtered 에 욕이 ** 로 치환된 문자열이 옴
+            return data.filtered as string;
+        } catch (e) {
+            console.error('Profanity filter error:', e);
+            return raw;
+        }
+    };
+
     const handleSendMessage = useCallback(async (content: string) => {
+        
+        // 욕설 필터 처리
+        const filteredContent = await filterMessage(content);
+        console.log('Filtered content:', filteredContent);
+
         const userMessage: ChatMessage = {
             id: `user-${Date.now()}`,
             role: 'user',
-            content,
+            content: filteredContent,
             timestamp: new Date(),
         };
 

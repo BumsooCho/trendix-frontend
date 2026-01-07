@@ -2,6 +2,9 @@ import { categoryList } from "@/app/actions/categoryList";
 import UserMain from "@/app/components/User/Main";
 import { HotTrendType } from "@/types/hotTrend";
 
+// 동적 라우트로 명시적 설정 (no-store fetch 사용으로 인한 빌드 에러 방지)
+export const dynamic = 'force-dynamic';
+
 export default async function UserMainPage() {
 
     try {

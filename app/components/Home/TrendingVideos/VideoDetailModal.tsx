@@ -1,9 +1,9 @@
+/* eslint-disable react/no-array-index-key */
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Icon } from '@iconify/react/dist/iconify.js'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface Video {
     id: string
@@ -28,10 +28,17 @@ interface VideoDetailModalProps {
     onClose: () => void
 }
 
+interface ViewHistoryItem {
+    snapshot_date: string // YYYY-MM-DD
+    view_count: number
+    like_count: number
+    comment_count: number
+}
+
 function formatNumber(num: number): string {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-    return num.toString()
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M'
+    if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K'
+    return String(num)
 }
 
 function formatChange(num: number): string {
@@ -50,196 +57,241 @@ function timeAgo(dateString: string): string {
     return `${Math.floor(seconds / 604800)}주 전`
 }
 
-// 스냅샷 히스토리 데이터 타입
-interface SnapshotData {
-//=======
-//interface ViewHistoryItem {
-    snapshot_date: Date
-    view_count: number
-    like_count: number
-    comment_count: number
-    daily_view_increase: number
-    daily_like_increase: number
-    daily_comment_increase: number
-}
+type ChartPoint = { time: string; count: number }
 
-// API 응답 타입
-interface VideoHistoryResponse {
-    video_id: string
-    items: SnapshotData[]
-}
-
-// 차트용 데이터 변환 - 조회수와 좋아요를 하나의 객체로 결합
-function formatSnapshotForChart(snapshots: SnapshotData[]) {
-    return snapshots.map(snapshot => ({
-        date: new Date(snapshot.snapshot_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
-        조회수: snapshot.view_count || 0,
-        좋아요: snapshot.like_count || 0,
-        댓글: snapshot.comment_count || 0
-    }))
-}
-
-// 커스텀 툴팁 컴포넌트
-function CustomTooltip({ active, payload, label }: any) {
-    if (active && payload && payload.length) {
+function DeltaBarChart({
+    data,
+    label,
+    colorClass,
+    isLoading,
+}: {
+    data: ChartPoint[]
+    label: string
+    colorClass: string
+    isLoading?: boolean
+}) {
+    if (isLoading) {
         return (
-            <div className='bg-gray-800 text-white p-3 rounded-lg shadow-lg'>
-                <p className='font-semibold mb-2'>{label}</p>
-                {payload.map((entry: any, index: number) => (
-                    <p key={index} style={{ color: entry.color }} className='text-sm'>
-                        {entry.name}: {formatNumber(entry.value)}
-                    </p>
-                ))}
+            <div className='bg-gray-50 rounded-lg p-3 border border-gray-200'>
+                <h4 className='font-medium text-gray-700 mb-3 text-sm pb-2 border-b border-gray-200'>
+                    {label} 추이
+                </h4>
+                <div className='flex items-center justify-center h-48'>
+                    <Icon icon='mdi:loading' className='text-2xl text-gray-400 animate-spin' />
+                </div>
             </div>
         )
     }
-    return null
-}
 
-function TrendLineChart({ data }: { data: any[] }) {
-    if (!data.length) return null
-
-    return (
-        <div className='bg-gray-50 rounded-lg p-4'>
-            <h4 className='font-medium text-gray-700 mb-3 text-sm'>7일간 추이</h4>
-            <ResponsiveContainer width='100%' height={300}>
-                <LineChart data={data} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray='3 3' stroke='#e0e0e0' />
-                    <XAxis
-                        dataKey='date'
-                        tick={{ fontSize: 12 }}
-                        stroke='#666'
-                    />
-                    <YAxis
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => formatNumber(value)}
-                        stroke='#666'
-                        yAxisId='left'
-                    />
-                    <YAxis
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => formatNumber(value)}
-                        stroke='#666'
-                        orientation='right'
-                        yAxisId='right'
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend
-                        wrapperStyle={{ fontSize: '14px' }}
-                        iconType='line'
-                    />
-                    <Line
-                        type='monotone'
-                        dataKey='조회수'
-                        stroke='#3b82f6'
-                        strokeWidth={3}
-                        dot={{ fill: '#3b82f6', r: 4 }}
-                        activeDot={{ r: 6 }}
-                        yAxisId='left'
-                    />
-                    <Line
-                        type='monotone'
-                        dataKey='좋아요'
-                        stroke='#ec4899'
-                        strokeWidth={3}
-                        dot={{ fill: '#ec4899', r: 4 }}
-                        activeDot={{ r: 6 }}
-                        yAxisId='right'
-                    />
-                </LineChart>
-            </ResponsiveContainer>
-
-            {/* 통계 정보 */}
-            <div className='grid grid-cols-2 gap-4 mt-4'>
-                <div className='bg-blue-50 rounded-lg p-3'>
-                    <div className='flex items-center gap-2 mb-2'>
-                        <div className='w-3 h-3 rounded-full bg-blue-500'></div>
-                        <span className='text-sm font-medium text-gray-700'>조회수</span>
-                    </div>
-                    <div className='text-xs text-gray-600 space-y-1'>
-                        <div className='flex justify-between'>
-                            <span>시작:</span>
-                            <span className='font-medium'>{formatNumber(data[0]?.조회수 || 0)}</span>
-                        </div>
-                        <div className='flex justify-between'>
-                            <span>현재:</span>
-                            <span className='font-medium'>{formatNumber(data[data.length - 1]?.조회수 || 0)}</span>
-                        </div>
-                        <div className='flex justify-between'>
-                            <span>증가:</span>
-                            <span className={`font-bold ${
-                                (data[data.length - 1]?.조회수 || 0) > (data[0]?.조회수 || 0) ? 'text-green-600' : 'text-gray-500'
-                            }`}>
-                                +{formatNumber((data[data.length - 1]?.조회수 || 0) - (data[0]?.조회수 || 0))}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div className='bg-pink-50 rounded-lg p-3'>
-                    <div className='flex items-center gap-2 mb-2'>
-                        <div className='w-3 h-3 rounded-full bg-pink-500'></div>
-                        <span className='text-sm font-medium text-gray-700'>좋아요</span>
-                    </div>
-                    <div className='text-xs text-gray-600 space-y-1'>
-                        <div className='flex justify-between'>
-                            <span>시작:</span>
-                            <span className='font-medium'>{formatNumber(data[0]?.좋아요 || 0)}</span>
-                        </div>
-                        <div className='flex justify-between'>
-                            <span>현재:</span>
-                            <span className='font-medium'>{formatNumber(data[data.length - 1]?.좋아요 || 0)}</span>
-                        </div>
-                        <div className='flex justify-between'>
-                            <span>증가:</span>
-                            <span className={`font-bold ${
-                                (data[data.length - 1]?.좋아요 || 0) > (data[0]?.좋아요 || 0) ? 'text-green-600' : 'text-gray-500'
-                            }`}>
-                                +{formatNumber((data[data.length - 1]?.좋아요 || 0) - (data[0]?.좋아요 || 0))}
-                            </span>
-                        </div>
-                    </div>
+    if (!data.length) {
+        return (
+            <div className='bg-gray-50 rounded-lg p-3 border border-gray-200'>
+                <h4 className='font-medium text-gray-700 mb-3 text-sm pb-2 border-b border-gray-200'>
+                    {label} 추이
+                </h4>
+                <div className='flex items-center justify-center h-48 text-gray-400 text-sm'>
+                    데이터 없음
                 </div>
             </div>
+        )
+    }
+
+    // Y축: 최소값 기준 차이(Δ) 스케일
+    const realMin = Math.min(...data.map((d) => d.count))
+    const realMax = Math.max(...data.map((d) => d.count))
+    const range = Math.max(realMax - realMin, 0)
+    const allSameValue = range === 0
+
+    const oldestCount = data[0]?.count ?? 0
+    const newestCount = data[data.length - 1]?.count ?? 0
+    const deltaCount = newestCount - oldestCount
+
+    const dataWithDelta = data.map((item) => ({
+        ...item,
+        delta: item.count - realMin,
+    }))
+
+    // X축: 10개 이하 => 화면에 모두, 10개 초과 => 가로 스크롤로 모두
+    const isScrollable = dataWithDelta.length > 10
+    const barWidthPx = 28
+
+    return (
+        <div className='bg-gray-50 rounded-lg p-3 border border-gray-200'>
+            <h4 className='font-medium text-gray-700 mb-3 text-sm pb-2 border-b border-gray-200'>
+                {label} 추이
+            </h4>
+
+            {/* Bars */}
+            {isScrollable ? (
+                <div className='h-48 mb-1 px-2 overflow-x-auto'>
+                    <div className='h-full flex items-end gap-1'>
+                        {dataWithDelta.map((item, i) => {
+                            const heightPercent = range > 0 ? (item.delta / range) * 100 : 100
+
+                            return (
+                                <div
+                                    key={i}
+                                    className='h-full flex flex-col justify-end items-center group relative shrink-0'
+                                    style={{ width: barWidthPx }}
+                                >
+                                    <div
+                                        className={`w-full rounded-t-md transition-all duration-200 ${colorClass} hover:brightness-110 cursor-pointer shadow-sm`}
+                                        style={{
+                                            height: `${heightPercent}%`,
+                                            minHeight: '4px',
+                                            minWidth: '8px',
+                                        }}
+                                    >
+                                        <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none'>
+                                            <div className='bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg'>
+                                                {item.time}
+                                                <br />
+                                                <span className='font-semibold'>+{formatNumber(item.delta)}</span>
+                                                <span className='text-gray-300 text-[10px]'> (총 {formatNumber(item.count)})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            ) : (
+                <div className='h-48 mb-1 px-2'>
+                    <div className='h-full flex items-end gap-1'>
+                        {dataWithDelta.map((item, i) => {
+                            const heightPercent = range > 0 ? (item.delta / range) * 100 : 100
+
+                            return (
+                                <div
+                                    key={i}
+                                    className='h-full flex-1 flex flex-col justify-end items-center group relative'
+                                    style={{ minWidth: 28 }}
+                                >
+                                    <div
+                                        className={`w-full rounded-t-md transition-all duration-200 ${colorClass} hover:brightness-110 cursor-pointer shadow-sm`}
+                                        style={{
+                                            height: `${heightPercent}%`,
+                                            minHeight: '4px',
+                                        }}
+                                    >
+                                        <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10 pointer-events-none'>
+                                            <div className='bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg'>
+                                                {item.time}
+                                                <br />
+                                                <span className='font-semibold'>+{formatNumber(item.delta)}</span>
+                                                <span className='text-gray-300 text-[10px]'> (총 {formatNumber(item.count)})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* X labels: show all, newest at the end (data already in old->new order) */}
+            {isScrollable ? (
+                <div className='px-2 overflow-x-auto mb-2'>
+                    <div className='flex gap-1 text-[9px] text-gray-400'>
+                        {dataWithDelta.map((item, i) => (
+                            <div key={i} className='text-center shrink-0' style={{ width: barWidthPx }}>
+                                {item.time}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ) : (
+                <div className='px-2 mb-2'>
+                    <div className='flex gap-1 text-[9px] text-gray-400'>
+                        {dataWithDelta.map((item, i) => (
+                            <div key={i} className='text-center flex-1' style={{ minWidth: 28 }}>
+                                {item.time}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Stats */}
+            <div className='flex justify-between text-xs text-gray-500 pt-2'>
+                <span>MIN: 0</span>
+                <span className='font-medium text-gray-700'>MAX: {formatNumber(range)}</span>
+                {allSameValue ? (
+                    <span className='text-gray-600 font-medium'>변동 없음</span>
+                ) : (
+                    <span className='text-green-600 font-medium'>{formatChange(deltaCount)}</span>
+                )}
+            </div>
+            <div className='mt-1 text-[11px] text-gray-400'>기준값(최소): {formatNumber(realMin)}</div>
         </div>
     )
 }
 
 export default function VideoDetailModal({ video, onClose }: VideoDetailModalProps) {
-    const [snapshotHistory, setSnapshotHistory] = useState<SnapshotData[]>([])
-    const [loading, setLoading] = useState<boolean>(false)
+    const [history, setHistory] = useState<ViewHistoryItem[]>([])
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
-    // 스냅샷 히스토리 데이터 가져오기
+    // Fetch view history when video changes
     useEffect(() => {
-        if (!video?.id) {
-            setSnapshotHistory([])
-            return
-        }
+        if (!video) return
 
-        // 영상이 바뀔 때마다 이전 데이터 초기화
-        setSnapshotHistory([])
-        setLoading(true)
+        const controller = new AbortController()
 
-        const fetchHistory = async () => {
+        const fetchViewHistory = async () => {
+            setIsLoadingHistory(true)
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/trends/videos/${video.id}/history?days=7`)
-                if (response.ok) {
-                    const data: VideoHistoryResponse = await response.json()
-                    setSnapshotHistory(data.items || [])
-                } else {
-                    console.error('Failed to fetch video history:', response.status)
-                    setSnapshotHistory([])
+                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+                if (!apiBaseUrl) {
+                    console.error('NEXT_PUBLIC_API_BASE_URL is not defined. Please set it in .env.local')
+                    setHistory([])
+                    return
                 }
-            } catch (error) {
-                console.error('Failed to fetch video history:', error)
-                setSnapshotHistory([])
+
+                const url = `${apiBaseUrl}/trends/videos/${video.id}/view_history?platform=youtube&limit=30`
+                const res = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' },
+                    cache: 'no-store',
+                    signal: controller.signal,
+                })
+
+                if (!res.ok) {
+                    const errorText = await res.text().catch(() => '')
+                    console.error('Failed to fetch view history:', {
+                        status: res.status,
+                        statusText: res.statusText,
+                        error: errorText,
+                        url: res.url,
+                    })
+                    setHistory([])
+                    return
+                }
+
+                const data = await res.json()
+                const items: ViewHistoryItem[] = Array.isArray(data?.history) ? data.history : []
+
+                // Ensure sort: old -> new (latest at the end)
+                const sorted = items.slice().sort((a, b) => {
+                    const ta = new Date(a.snapshot_date).getTime()
+                    const tb = new Date(b.snapshot_date).getTime()
+                    return ta - tb
+                })
+                setHistory(sorted)
+            } catch (e: any) {
+                if (e?.name !== 'AbortError') console.error(e)
+                setHistory([])
             } finally {
-                setLoading(false)
+                setIsLoadingHistory(false)
             }
         }
 
-        fetchHistory()
-    }, [video?.id])
-    // ESC 키로 닫기
+        fetchViewHistory()
+        return () => controller.abort()
+    }, [video])
+
+    // Close on ESC
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose()
@@ -248,10 +300,9 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
         return () => window.removeEventListener('keydown', handleEsc)
     }, [onClose])
 
-    // 스크롤 방지
+    // Prevent body scroll when modal open
     useEffect(() => {
         if (!video) return
-
         const originalStyle = window.getComputedStyle(document.body).overflow
         document.body.style.overflow = 'hidden'
         return () => {
@@ -259,22 +310,30 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
         }
     }, [video])
 
+    const viewSeries: ChartPoint[] = useMemo(() => {
+        return history.map((item) => ({
+            time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+            count: item.view_count ?? 0,
+        }))
+    }, [history])
+
+    const likeSeries: ChartPoint[] = useMemo(() => {
+        return history.map((item) => ({
+            time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }),
+            count: item.like_count ?? 0,
+        }))
+    }, [history])
+
     if (!video) return null
 
     return (
-        <div
-            className='fixed inset-0 z-[100] flex items-center justify-center p-4'
-            onClick={onClose}
-        >
-            {/* Backdrop */}
+        <div className='fixed inset-0 z-[100] flex items-center justify-center p-4' onClick={onClose}>
             <div className='absolute inset-0 bg-black/60 backdrop-blur-sm z-[-1]' />
 
-            {/* Modal */}
             <div
                 className='relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto'
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Close button */}
                 <button
                     onClick={onClose}
                     className='absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors'
@@ -282,31 +341,24 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
                     <Icon icon='mdi:close' className='text-xl' />
                 </button>
 
-                {/* Thumbnail */}
                 <div className='relative aspect-video'>
-                    <Image
-                        src={video.thumbnailUrl}
-                        alt={video.title}
-                        fill
-                        className='object-cover rounded-t-2xl'
-                    />
+                    <Image src={video.thumbnailUrl} alt={video.title} fill className='object-cover rounded-t-2xl' />
                     {video.trendingRank && video.trendingRank <= 10 && (
                         <div className='absolute top-4 left-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full flex items-center gap-2 shadow-lg'>
                             <Icon icon='mdi:fire' className='text-xl' />
                             <span className='font-bold'>급등 #{video.trendingRank}</span>
                         </div>
                     )}
-                    <div className='absolute bottom-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm'>
-                        {video.duration}
-                    </div>
+                    {!!video.duration && (
+                        <div className='absolute bottom-4 right-4 bg-black/80 text-white px-2 py-1 rounded text-sm'>
+                            {video.duration}
+                        </div>
+                    )}
                 </div>
 
-                {/* Content */}
                 <div className='p-6'>
-                    {/* Title */}
                     <h2 className='text-xl font-bold text-gray-900 mb-3'>{video.title}</h2>
 
-                    {/* Channel & Stats */}
                     <div className='flex flex-wrap items-center gap-4 text-gray-600 text-sm mb-4'>
                         <span className='font-medium'>{video.channelName}</span>
                         <span className='text-gray-300'>|</span>
@@ -323,7 +375,6 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
                         <span className='text-gray-400'>{timeAgo(video.publishedAt)}</span>
                     </div>
 
-                    {/* Trending reason */}
                     {video.trendingReason && (
                         <div className='bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4 mb-4'>
                             <div className='flex items-start gap-3'>
@@ -338,39 +389,11 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
                         </div>
                     )}
 
-                    {/* Charts */}
                     <div className='grid grid-cols-2 gap-4 mb-4'>
-                        <SimpleChart 
-                            // 리스트 개수만큼 전부 표시, 과거 -> 최신(최신이 맨 뒤)
-                            data={viewHistory
-                                .map(item => ({
-                                    time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { 
-                                        month: 'short', 
-                                        day: 'numeric'
-                                    }),
-                                    count: item.view_count
-                                }))}
-                            label='조회수' 
-                            color='bg-blue-500'
-                            isLoading={isLoadingHistory}
-                        />
-                        <SimpleChart
-                            // 리스트 개수만큼 전부 표시, 과거 -> 최신(최신이 맨 뒤)
-                            data={viewHistory
-                                .map(item => ({
-                                    time: new Date(item.snapshot_date).toLocaleDateString('ko-KR', { 
-                                        month: 'short', 
-                                        day: 'numeric'
-                                    }),
-                                    count: item.like_count
-                                }))}
-                            label='좋아요'
-                            color='bg-pink-500'
-                            isLoading={isLoadingHistory}
-                        />
+                        <DeltaBarChart data={viewSeries} label='조회수' colorClass='bg-blue-500' isLoading={isLoadingHistory} />
+                        <DeltaBarChart data={likeSeries} label='좋아요' colorClass='bg-pink-500' isLoading={isLoadingHistory} />
                     </div>
 
-                    {/* Actions */}
                     <div className='flex gap-3'>
                         <a
                             href={`https://youtube.com/watch?v=${video.id}`}
@@ -394,3 +417,5 @@ export default function VideoDetailModal({ video, onClose }: VideoDetailModalPro
         </div>
     )
 }
+
+

@@ -15,13 +15,13 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const stored = sessionStorage.getItem('selectedVideo');
+        const stored = localStorage.getItem('selectedVideo');
         if (stored) {
             try {
                 _setSelectedVideo(JSON.parse(stored));
             } catch (error) {
                 console.error("Failed to parse stored video", error);
-                sessionStorage.removeItem('selectedVideo');
+                localStorage.removeItem('selectedVideo');
             }
         }
         setIsLoading(false);
@@ -30,9 +30,9 @@ export function VideoProvider({ children }: { children: ReactNode }) {
     const setSelectedVideo = (video: Video | null) => {
         _setSelectedVideo(video);
         if (video) {
-            sessionStorage.setItem('selectedVideo', JSON.stringify(video));
+            localStorage.setItem('selectedVideo', JSON.stringify(video));
         } else {
-            sessionStorage.removeItem('selectedVideo');
+            localStorage.removeItem('selectedVideo');
         }
     };
 

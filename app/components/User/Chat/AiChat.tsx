@@ -29,7 +29,7 @@ export default function AiChat() {
         }
     }, [conversationId]);
 
-        // ★ 욕설 필터 API 호출 함수
+    // ★ 욕설 필터 API 호출 함수
     const filterMessage = async (raw: string): Promise<string> => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -59,7 +59,7 @@ export default function AiChat() {
     };
 
     const handleSendMessage = useCallback(async (content: string) => {
-        
+
         // 욕설 필터 처리
         const filteredContent = await filterMessage(content);
         console.log('Filtered content:', filteredContent);
@@ -82,10 +82,11 @@ export default function AiChat() {
             // 현재 메시지까지 포함된 전체 메시지 리스트 생성
             const newMessages = [...messages, userMessage];
 
-            // 백엔드로 보낼 메시지 리스트 (id, timestamp 등 제외하고 role, content만 전송)
-            const apiMessages = newMessages.map(({ role, content }) => ({
+            // 백엔드로 보낼 메시지 리스트 (id, timestamp 등 제외하고 role, content, videos 전송)
+            const apiMessages = newMessages.map(({ role, content, videos }) => ({
                 role,
-                content
+                content,
+                videos
             }));
 
             const response = await fetch('/api/chat', {

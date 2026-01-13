@@ -75,7 +75,7 @@ export default function MainDetailPage() {
                 <div className="space-y-4">
                     <div>
                         <h2 className="text-sm font-medium text-gray-500">채널</h2>
-                        <p className="text-lg font-semibold">{video.channel_username.replace("@", "")}</p>
+                        <p className="text-lg font-semibold">{video.channel_username?.replace("@", "")}</p>
                     </div>
                     <div>
                         <h2 className="text-sm font-medium text-gray-500">플랫폼</h2>

@@ -78,6 +78,9 @@ export default function AiChat() {
         // ⭐ 새로운 AbortController 생성
         abortControllerRef.current = new AbortController();
 
+        // UI 업데이트를 위해 메인 스레드 양보 (렌더링 사이클 확보)
+        await new Promise(resolve => setTimeout(resolve, 0));
+
         try {
             // 현재 메시지까지 포함된 전체 메시지 리스트 생성
             const newMessages = [...messages, userMessage];

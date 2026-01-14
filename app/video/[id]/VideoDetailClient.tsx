@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { Icon } from '@iconify/react/dist/iconify.js'
 
 // 임시 타입 정의
@@ -31,53 +30,8 @@ interface VideoDetail {
     likeHistory: { time: string; count: number }[]
 }
 
-// 더미 데이터
-const getDummyVideo = (id: string): VideoDetail => ({
-    id,
-    title: '[속보] 오늘 발표된 새로운 정책, 전문가들의 반응은?',
-    description: `오늘 발표된 새로운 정책에 대해 각계각층 전문가들의 다양한 의견을 들어봤습니다.
 
-이번 정책의 핵심 내용과 시민들에게 미칠 영향, 그리고 향후 전망까지 상세하게 분석해 드립니다.
 
-#뉴스 #속보 #정책 #전문가분석`,
-    channelName: '뉴스채널 A',
-    channelId: 'ch1',
-    channelThumbnail: 'https://picsum.photos/seed/ch1/100/100',
-    thumbnailUrl: 'https://picsum.photos/seed/v1/1280/720',
-    viewCount: 1250000,
-    likeCount: 85000,
-    commentCount: 3200,
-    publishedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    duration: '12:34',
-    categoryId: '25',
-    categoryName: '뉴스',
-    tags: ['뉴스', '속보', '정책', '전문가', '분석', '시사'],
-    isShort: false,
-    trendingRank: 1,
-    trendingReason: '3시간 만에 조회수 45만 급등, 동일 카테고리 평균 대비 12배 빠른 성장',
-    viewHistory: [
-        { time: '8시간 전', count: 50000 },
-        { time: '7시간 전', count: 120000 },
-        { time: '6시간 전', count: 280000 },
-        { time: '5시간 전', count: 450000 },
-        { time: '4시간 전', count: 680000 },
-        { time: '3시간 전', count: 890000 },
-        { time: '2시간 전', count: 1050000 },
-        { time: '1시간 전', count: 1180000 },
-        { time: '현재', count: 1250000 },
-    ],
-    likeHistory: [
-        { time: '8시간 전', count: 3000 },
-        { time: '7시간 전', count: 12000 },
-        { time: '6시간 전', count: 28000 },
-        { time: '5시간 전', count: 42000 },
-        { time: '4시간 전', count: 58000 },
-        { time: '3시간 전', count: 68000 },
-        { time: '2시간 전', count: 78000 },
-        { time: '1시간 전', count: 82000 },
-        { time: '현재', count: 85000 },
-    ],
-})
 
 function formatNumber(num: number): string {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -133,16 +87,49 @@ interface VideoDetailClientProps {
 }
 
 export default function VideoDetailClient({ videoId }: VideoDetailClientProps) {
-    const router = useRouter()
     const [video, setVideo] = useState<VideoDetail | null>(null)
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        // TODO: 백엔드 API 연동
-        setTimeout(() => {
-            setVideo(getDummyVideo(videoId))
-            setLoading(false)
-        }, 500)
+        const fetchVideoDetail = async () => {
+            setLoading(true)
+            setError(null)
+            setVideo(null)
+
+            try {
+                const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+                if (!apiBaseUrl) {
+                    throw new Error('NEXT_PUBLIC_API_BASE_URL 환경 변수가 설정되어 있지 않습니다.')
+                }
+
+                const response = await fetch(
+                    `${apiBaseUrl}/analysis/videos/${videoId}?platform=youtube&history_limit=9`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => null)
+                    const detail = typeof payload?.detail === 'string' ? payload.detail : `요청에 실패했습니다. (status: ${response.status})`
+                    throw new Error(detail)
+                }
+
+                const data: VideoDetail = await response.json()
+                setVideo(data)
+            } catch (err) {
+                const message = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+                setError(message)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchVideoDetail()
     }, [videoId])
 
     if (loading) {
@@ -156,7 +143,7 @@ export default function VideoDetailClient({ videoId }: VideoDetailClientProps) {
     if (!video) {
         return (
             <div className='min-h-screen flex items-center justify-center'>
-                <p className='text-gray-500'>영상을 찾을 수 없습니다.</p>
+                <p className='text-gray-500'>{error ?? '영상을 찾을 수 없습니다.'}</p>
             </div>
         )
     }

@@ -26,52 +26,8 @@ interface ChannelData {
 }
 
 // 더미 데이터
-const getDummyChannelData = (): ChannelData => ({
-    channelId: 'UCxxxxxx',
-    channelName: '내 채널',
-    channelThumbnail: 'https://picsum.photos/seed/mychannel/100/100',
-    subscriberCount: 125000,
-    totalVideos: 342,
-    overallPerformance: 78,
-    recentVideos: [
-        {
-            id: 'v1',
-            title: '최근 업로드한 영상 1 - 반응이 좋았던 콘텐츠',
-            thumbnailUrl: 'https://picsum.photos/seed/myv1/320/180',
-            viewCount: 45000,
-            trendAvgViewCount: 32000,
-            publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            performance: 'above',
-        },
-        {
-            id: 'v2',
-            title: '최근 업로드한 영상 2 - 평균적인 성과',
-            thumbnailUrl: 'https://picsum.photos/seed/myv2/320/180',
-            viewCount: 28000,
-            trendAvgViewCount: 30000,
-            publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-            performance: 'average',
-        },
-        {
-            id: 'v3',
-            title: '최근 업로드한 영상 3 - 개선이 필요한 콘텐츠',
-            thumbnailUrl: 'https://picsum.photos/seed/myv3/320/180',
-            viewCount: 12000,
-            trendAvgViewCount: 28000,
-            publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-            performance: 'below',
-        },
-        {
-            id: 'v4',
-            title: '최근 업로드한 영상 4',
-            thumbnailUrl: 'https://picsum.photos/seed/myv4/320/180',
-            viewCount: 38000,
-            trendAvgViewCount: 25000,
-            publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-            performance: 'above',
-        },
-    ],
-})
+
+
 
 function formatNumber(num: number): string {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -102,17 +58,48 @@ export default function ChannelAnalysisClient() {
     const [channelData, setChannelData] = useState<ChannelData | null>(null)
     const [loading, setLoading] = useState(false)
     const [analyzed, setAnalyzed] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     const handleAnalyze = async () => {
         if (!channelUrl.trim()) return
 
         setLoading(true)
+        setError(null)
+        setChannelData(null)
         // TODO: 백엔드 API 연동
-        setTimeout(() => {
-            setChannelData(getDummyChannelData())
-            setLoading(false)
+        try {
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+            if (!apiBaseUrl) {
+                throw new Error('NEXT_PUBLIC_API_BASE_URL 환경 변수가 설정되어 있지 않습니다.')
+            }
+
+            const response = await fetch(`${apiBaseUrl}/analysis/channel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platform: 'youtube',
+                    channel_url: channelUrl.trim(),
+                }),
+            })
+
+            if (!response.ok) {
+                const payload = await response.json().catch(() => null)
+                const detail = typeof payload?.detail === 'string' ? payload.detail : `요청에 실패했습니다. (status: ${response.status})`
+                throw new Error(detail)
+            }
+
+            const data: ChannelData = await response.json()
+            setChannelData(data)
             setAnalyzed(true)
-        }, 1500)
+        } catch (err) {
+            const message = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+            setError(message)
+            setAnalyzed(false)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -159,6 +146,11 @@ export default function ChannelAnalysisClient() {
                             </button>
                         </div>
                     </div>
+                    {error && (
+                        <div className='mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600'>
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 {/* Results */}
